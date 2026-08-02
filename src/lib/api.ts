@@ -3,11 +3,10 @@ import type { AnalyseResponse, SummarizeResponse } from "./types";
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 function baseUrl(): string {
-  if (API_BASE) return API_BASE;
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  if (!API_BASE) {
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
   }
-  return "http://127.0.0.1:8000";
+  return API_BASE;
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
