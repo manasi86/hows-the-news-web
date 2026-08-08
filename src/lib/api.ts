@@ -2,15 +2,8 @@ import type { AnalyseResponse, SummarizeResponse, TokenUsage } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
-function baseUrl(): string {
-  if (!API_BASE) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set");
-  }
-  return API_BASE;
-}
-
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${baseUrl()}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

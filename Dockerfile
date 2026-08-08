@@ -13,9 +13,16 @@ FROM base AS build
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 
-# Public env vars for the client bundle are baked in at build time.
-ARG NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+# Public env var for the client bundle is baked in at build time.
+# Empty means the browser calls same-origin paths (/summarize, /analyse),
+# which the Next.js server proxies to the API via rewrites (next.config.ts).
+ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Server-side target for the /summarize and /analyse rewrites.
+# Inside the Docker network this resolves to the api compose service.
+ARG API_BASE_URL=http://api:8000
+ENV API_BASE_URL=$API_BASE_URL
 
 RUN npm run build
 
@@ -26,6 +33,11 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
+
+# Make the proxy target available to the running server too, so it can be
+# overridden at runtime (e.g. docker compose env).
+ARG API_BASE_URL=http://api:8000
+ENV API_BASE_URL=$API_BASE_URL
 
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
