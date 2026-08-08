@@ -1,4 +1,4 @@
-import type { AnalyseResponse, SummarizeResponse } from "./types";
+import type { AnalyseResponse, SummarizeResponse, TokenUsage } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
@@ -39,4 +39,32 @@ export function summarizeUrl(url: string): Promise<SummarizeResponse> {
 
 export function analyse(text: string): Promise<AnalyseResponse> {
   return post<AnalyseResponse>("/analyse", { text });
+}
+
+export function usageFrom(
+  resp: SummarizeResponse | AnalyseResponse,
+): TokenUsage | null {
+  const {
+    prompt_tokens,
+    completion_tokens,
+    prompt_tokens_cost,
+    completion_tokens_cost,
+    cost,
+  } = resp;
+  if (
+    prompt_tokens === undefined ||
+    completion_tokens === undefined ||
+    prompt_tokens_cost === undefined ||
+    completion_tokens_cost === undefined ||
+    cost === undefined
+  ) {
+    return null;
+  }
+  return {
+    prompt_tokens,
+    completion_tokens,
+    prompt_tokens_cost,
+    completion_tokens_cost,
+    cost,
+  };
 }

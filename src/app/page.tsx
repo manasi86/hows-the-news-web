@@ -7,8 +7,9 @@ import ModeToggle, { type Mode } from "@/components/ModeToggle";
 import InputArea from "@/components/InputArea";
 import GoButton from "@/components/GoButton";
 import Results from "@/components/Results";
-import { analyse, summarizeText, summarizeUrl } from "@/lib/api";
-import type { Mood } from "@/lib/types";
+import TokenUsage from "@/components/TokenUsage";
+import { analyse, summarizeText, summarizeUrl, usageFrom } from "@/lib/api";
+import type { Mood, TokenUsage as TokenUsageType } from "@/lib/types";
 
 type Phase = "Summarizing..." | "Analyzing..." | "";
 
@@ -19,6 +20,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState("");
   const [analysis, setAnalysis] = useState("");
+  const [summaryUsage, setSummaryUsage] = useState<TokenUsageType | null>(null);
+  const [analyseUsage, setAnalyseUsage] = useState<TokenUsageType | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +30,8 @@ export default function Home() {
     setMood("idle");
     setSummary("");
     setAnalysis("");
+    setSummaryUsage(null);
+    setAnalyseUsage(null);
   }
 
   async function processNews() {
@@ -40,9 +45,11 @@ export default function Home() {
       setPhase("Summarizing...");
       const summarized =
         mode === "text" ? await summarizeText(value) : await summarizeUrl(value);
+      setSummaryUsage(usageFrom(summarized));
 
       if (!summarized.is_news || !summarized.summary) {
         setMood("notnews");
+        setAnalyseUsage(null);
         setSummary(
           summarized.summary ??
             (summarized.reason || "This doesn't look like a news article."),
@@ -52,6 +59,7 @@ export default function Home() {
         setPhase("Analyzing...");
         setSummary(summarized.summary);
         const result = await analyse(summarized.summary);
+        setAnalyseUsage(usageFrom(result));
         setAnalysis(result.reason || describeSentiment(result.sentiment));
         if (result.sentiment === "positive") setMood("happy");
         else if (result.sentiment === "negative") setMood("sad");
@@ -82,6 +90,8 @@ export default function Home() {
     setMood("idle");
     setSummary("");
     setAnalysis("");
+    setSummaryUsage(null);
+    setAnalyseUsage(null);
     if (inputRef.current) inputRef.current.value = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -108,6 +118,7 @@ export default function Home() {
           {mood !== "idle" && (
             <div ref={resultsRef}>
               <Results mood={mood} summary={summary} analysis={analysis} onReset={reset} />
+              <TokenUsage summaryUsage={summaryUsage} analyseUsage={analyseUsage} />
             </div>
           )}
         </div>
